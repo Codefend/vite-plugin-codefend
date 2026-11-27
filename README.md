@@ -12,7 +12,7 @@
 
 Vite plugin for code obfuscation based on [Codefend](https://www.npmjs.com/package/codefend).
 
-Supports Vite 6.4.6 and newer within Vite 6, 7, and 8. The plugin requires Node.js 18 or newer. Vite's own Node.js requirements also apply.
+Supports Vite 6.4.6 and newer within Vite 6, 7, and 8.
 
 ## Installation
 
