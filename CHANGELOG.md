@@ -7,4 +7,5 @@
 - Apply obfuscation during Vite builds after framework transforms, keeping mappings consistent across modules and preserving Vite helpers, asset and preload markers, and the Rolldown runtime.
 - Provide CommonJS and ESM packages with declarations and build source maps through tsdown.
 - Add unit and integration tests, coverage, package consumption checks, Linux and Windows CI, and supported Node.js runtime checks.
+- Resolve Windows temporary-directory aliases before integration and package checks so Vite 6/7 HTML builds use consistent paths.
 - Include a Vite library example that builds with the local plugin checkout.

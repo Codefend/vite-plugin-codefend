@@ -7,6 +7,9 @@ import vm from "node:vm";
 import { describe, expect, it } from "vitest";
 import { codefend } from "..";
 
+// Expand Windows short-name aliases before Vite compares the root and HTML entry paths.
+const fixtureParent = fs.realpathSync.native(os.tmpdir());
+
 const bundlers = [
   { name: "Vite 6", load: () => import("vite-6") },
   { name: "Vite 7", load: () => import("vite-7") },
@@ -14,7 +17,7 @@ const bundlers = [
 ];
 
 function createFixture(files: Record<string, string>): string {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "codefend-vite-test-"));
+  const root = fs.mkdtempSync(path.join(fixtureParent, "codefend-vite-test-"));
   for (const [name, source] of Object.entries(files)) {
     fs.writeFileSync(path.join(root, name), source);
   }
@@ -23,7 +26,7 @@ function createFixture(files: Record<string, string>): string {
 
 function removeFixture(root: string): void {
   if (
-    path.dirname(path.resolve(root)) !== path.resolve(os.tmpdir()) ||
+    path.dirname(path.resolve(root)) !== path.resolve(fixtureParent) ||
     !path.basename(root).startsWith("codefend-vite-test-")
   ) {
     throw new Error("Refusing to remove a directory outside the test fixtures.");

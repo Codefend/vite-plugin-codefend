@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -25,7 +25,8 @@ for (const entry of [manifest.main, manifest.module]) {
   assert.ok(map.sources.length > 0 && map.sourcesContent.length > 0);
 }
 
-const fixture = mkdtempSync(join(tmpdir(), "codefend-vite-package-"));
+const fixtureParent = realpathSync.native(tmpdir());
+const fixture = mkdtempSync(join(fixtureParent, "codefend-vite-package-"));
 try {
   writeFileSync(join(fixture, "entry.js"), 'import { l_add } from "./math.js"; export default l_add(2, 3);');
   writeFileSync(join(fixture, "math.js"), "export function l_add(l_left, l_right) { return l_left + l_right; }");
@@ -56,7 +57,7 @@ try {
     assert.equal(module.exports, 5);
   }
 } finally {
-  if (dirname(resolve(fixture)) !== resolve(tmpdir()) || !basename(fixture).startsWith("codefend-vite-package-")) {
+  if (dirname(resolve(fixture)) !== resolve(fixtureParent) || !basename(fixture).startsWith("codefend-vite-package-")) {
     throw new Error("Refusing to remove a directory outside the package fixtures.");
   }
   rmSync(fixture, { recursive: true, force: true });
