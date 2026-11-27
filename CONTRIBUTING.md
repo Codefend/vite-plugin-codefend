@@ -28,18 +28,9 @@ The build uses TypeScript 5 and tsdown to produce `dist/index.js`, `dist/index.m
 
 CI runs the same checks on Linux and Windows. Runtime checks build the plugin on Node.js 24, then consume the package on the supported Node.js versions using a compatible Vite version. No publishing workflow is configured.
 
-## Example
+## Examples
 
-Build the root package first, then run the example:
-
-```sh
-cd examples/nodejs
-npm ci --include=dev --include=optional --bin-links
-npm run build
-npm start
-```
-
-The example depends on `file:../..`, so it exercises the local checkout.
+Usage examples are maintained in the [Vite example](https://codefend.github.io/docs/examples/vite) in the Codefend documentation.
 
 ## Pull requests and releases
 

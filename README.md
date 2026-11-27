@@ -12,9 +12,11 @@
 
 Vite plugin for code obfuscation based on [Codefend](https://www.npmjs.com/package/codefend).
 
-Supports Vite 6.4.6 and newer within Vite 6, 7, and 8. The plugin requires Node.js 18 or newer; use a Node.js version supported by your installed Vite version. Development and CI use Node.js 24.
+Supports Vite 6.4.6 and newer within Vite 6, 7, and 8.
 
 ## Installation
+
+Install the plugin in your existing Vite project:
 
 ```bash
 npm install -D vite-plugin-codefend
@@ -22,7 +24,9 @@ npm install -D vite-plugin-codefend
 
 ## Usage
 
-Add the plugin to your `vite.config.js` or `vite.config.ts`:
+### Default options
+
+Add the plugin to your `vite.config.mjs`. Keep any other plugins and build settings your project needs.
 
 ```js
 import { defineConfig } from "vite";
@@ -33,9 +37,9 @@ export default defineConfig({
 });
 ```
 
-The plugin runs during `vite build` and applies after framework transforms. The development server and HMR retain their usual behavior. Options use the same `transformation` and `debug` structure as the Rollup and Webpack plugins and are validated with `schema-utils`.
-
 ### Custom options
+
+Customize obfuscation and statistics with the `transformation` and `debug` options:
 
 ```js
 import { defineConfig } from "vite";
@@ -45,19 +49,20 @@ export default defineConfig({
   plugins: [
     codefend({
       transformation: {
-        // Prefix for generated identifiers.
+        // Prefix for generated names.
         prefix: "Ox",
 
-        // Explicit replacements take precedence over generated names.
+        // Explicit replacements for selected words.
         static: [{ from: "predefined_secret", to: "123456" }],
 
         // Words that should retain their original spelling.
         ignore: ["node_modules"],
 
-        // Optional names to use before generating prefixed identifiers.
+        // Optional names to use before generating prefixed names.
         pool: ["QueenOfHeart"],
       },
       debug: {
+        // Display statistics for transformed words.
         stats: true,
       },
     }),
@@ -65,37 +70,65 @@ export default defineConfig({
 });
 ```
 
-`transformation.ignore` contains words, rather than file paths or module filters. Statistics are enabled by default; use `debug: { stats: false }` to disable them.
+`transformation.ignore` contains words to preserve, not file paths or module filters. Statistics are enabled by default; use `debug: { stats: false }` to disable them.
+
+The plugin uses Codefend's `codeOnly` parser. CLI options for copying source files, renaming files and folders, and selecting custom parsers are not exposed. See the [configuration reference](https://codefend.github.io/docs/references/configuration) for transformation details.
 
 ### Naming convention
 
-Codefend uses its `codeOnly` parser to select words with a prefix such as `l_`. For example:
+Add a prefix such as `l_` to names you want Codefend to obfuscate:
 
 ```js
-const l_value = 42;
-console.log(l_value);
+function l_add(l_left, l_right) {
+  return l_left + l_right;
+}
+
+console.log(l_add(2, 3));
 ```
 
-With default options this becomes:
+With default options, Codefend transforms those names:
 
 ```js
-const Ox0 = 42;
-console.log(Ox0);
+function Ox0(Ox1, Ox2) {
+  return Ox1 + Ox2;
+}
+
+console.log(Ox0(2, 3));
 ```
 
-One mapping is shared across the modules handled by a plugin instance, so matching names in imports and exports receive consistent replacements. Vite's internal helper modules, generated asset and preload markers, and Rolldown runtime module are preserved.
+Both versions print `5`. Generated names can vary with the input and build order. See the [code naming conventions](https://codefend.github.io/docs/basic-usage/naming-conventions/code-naming-convention) for other supported prefixes.
 
-Transformations operate on the module text supplied by Vite. Review public export names, strings, and property names that must remain compatible with external code, and add those words to `transformation.ignore` when needed. This plugin does not provide a separate HTML or CSS asset transformation step.
+Codefend matches source text, so replacements can also affect strings and property names. Keep public exports, framework APIs, and external data contracts stable with `transformation.ignore`, and test the built application. Test custom pools across all modules before adopting them.
 
-See the [Codefend configuration reference](https://codefend.github.io/docs/references/configuration) for transformation options.
+## Migrate an existing project with AI
 
-## Example
+Use the [AI migration prompt](https://codefend.github.io/docs/basic-usage/naming-conventions/ai-assisted-migration) to adapt an existing project's internal variables, functions, classes, parameters, and members to Codefend's naming conventions. The guide provides a copyable prompt that asks your coding assistant to update references, preserve external interfaces and data keys, and test both the renamed source and the Codefend output.
 
-The [Node.js library example](./examples/nodejs/) builds a calculator through Vite and the local plugin checkout.
+## Build behavior
+
+The plugin runs automatically during `vite build` and applies after framework transforms. The development server and HMR retain their usual behavior; no conditional plugin configuration is needed.
+
+It transforms the module text supplied by Vite and preserves Vite's internal helper modules, generated asset and preload markers, and the Rolldown runtime module. It does not provide a separate HTML or CSS asset transformation step.
+
+Build with your usual project command, or run:
+
+```bash
+npx vite build
+```
+
+## Examples
+
+Follow the [Vite example](https://codefend.github.io/docs/examples/vite) in the Codefend documentation for complete source code, configuration, build commands, and expected output.
+
+## Documentation
+
+- [Codefend documentation](https://codefend.github.io/docs/)
+- [All language and build examples](https://codefend.github.io/docs/examples/list)
+- [Vite plugin](https://www.npmjs.com/package/vite-plugin-codefend), [esbuild plugin](https://www.npmjs.com/package/esbuild-plugin-codefend), [Rollup plugin](https://www.npmjs.com/package/rollup-plugin-codefend), and [Webpack plugin](https://www.npmjs.com/package/webpack-plugin-codefend)
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for development commands and the CI workflow.
+Pull requests and bug reports are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for development commands and contribution guidelines.
 
 ## License
 
