@@ -15,6 +15,7 @@ export type IViteCodefend = {
   ___options: IViteCodefendInternalOptions;
 };
 export type IViteCodefendOptions = {
+  parser?: { name?: "codeOnly" | "startWithMAndUnderscore" };
   transformation?: ICodefendTransformationOptions;
   debug?: IViteCodefendDebugOptions;
 };
