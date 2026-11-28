@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.3.0
+
+- Add `parser.name` with support for `codeOnly` and `startWithMAndUnderscore`.
+- Recommend the `m_` convention with `startWithMAndUnderscore` for narrower, explicit selection of application-owned names.
+- Keep `codeOnly` as the default when parser settings are omitted.
+- Require Codefend `^3.3.0`, including its casing, boundary, literal-key, and replacement-order fixes.
+- Validate parser options and add selection, real-build, and package regression checks.
+
 ## 3.2.2
 
 - Add the Vite plugin alongside the Codefend Rollup and Webpack plugins, using Codefend 3.2.1 and schema-utils validation.

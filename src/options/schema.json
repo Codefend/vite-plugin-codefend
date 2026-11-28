@@ -3,6 +3,16 @@
   "type": "object",
   "additionalProperties": false,
   "properties": {
+    "parser": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": ["codeOnly", "startWithMAndUnderscore"]
+        }
+      }
+    },
     "transformation": {
       "type": "object",
       "additionalProperties": false,
@@ -34,8 +44,15 @@
         },
         "pool": {
           "anyOf": [
-            { "type": "string" },
-            { "type": "array", "items": { "type": "string" } }
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
           ]
         }
       }
