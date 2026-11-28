@@ -12,9 +12,11 @@
 
 Vite plugin for code obfuscation based on [Codefend](https://www.npmjs.com/package/codefend).
 
-Supports Vite 6.4.6 and newer within Vite 6, 7, and 8. The plugin requires Node.js 18 or newer; use a Node.js version supported by your installed Vite version. Development and CI use Node.js 24.
+Supports Vite 6.4.6 and newer within Vite 6, 7, and 8.
 
 ## Installation
+
+Install the plugin in your existing Vite project:
 
 ```bash
 npm install -D vite-plugin-codefend
@@ -22,20 +24,22 @@ npm install -D vite-plugin-codefend
 
 ## Usage
 
-Add the plugin to your `vite.config.js` or `vite.config.ts`:
+### Recommended setup
+
+Add the plugin to your `vite.config.mjs`. Keep any other plugins and build settings your project needs.
 
 ```js
 import { defineConfig } from "vite";
 import { codefend } from "vite-plugin-codefend";
 
 export default defineConfig({
-  plugins: [codefend()],
+  plugins: [codefend({ parser: { name: "startWithMAndUnderscore" } })],
 });
 ```
 
-The plugin runs during `vite build` and applies after framework transforms. The development server and HMR retain their usual behavior. Options use the same `transformation` and `debug` structure as the Rollup and Webpack plugins and are validated with `schema-utils`.
-
 ### Custom options
+
+Configure parser selection, obfuscation, and statistics with the `parser`, `transformation`, and `debug` options:
 
 ```js
 import { defineConfig } from "vite";
@@ -44,20 +48,22 @@ import { codefend } from "vite-plugin-codefend";
 export default defineConfig({
   plugins: [
     codefend({
+      parser: { name: "startWithMAndUnderscore" },
       transformation: {
-        // Prefix for generated identifiers.
+        // Prefix for generated names.
         prefix: "Ox",
 
-        // Explicit replacements take precedence over generated names.
+        // Explicit replacements for selected words.
         static: [{ from: "predefined_secret", to: "123456" }],
 
         // Words that should retain their original spelling.
         ignore: ["node_modules"],
 
-        // Optional names to use before generating prefixed identifiers.
+        // Optional names to use before generating prefixed names.
         pool: ["QueenOfHeart"],
       },
       debug: {
+        // Display statistics for transformed words.
         stats: true,
       },
     }),
@@ -65,37 +71,78 @@ export default defineConfig({
 });
 ```
 
-`transformation.ignore` contains words, rather than file paths or module filters. Statistics are enabled by default; use `debug: { stats: false }` to disable them.
+`transformation.ignore` contains words to preserve, not file paths or module filters. Statistics are enabled by default; use `debug: { stats: false }` to disable them.
+
+### Parser selection
+
+`parser.name` accepts these two presets:
+
+| Name                      | Selection                                                             |
+| ------------------------- | --------------------------------------------------------------------- |
+| `startWithMAndUnderscore` | Recommended for new projects: explicitly marked `m_` names.           |
+| `codeOnly`                | The existing broader underscore naming rule; retained as the default. |
+
+We recommend `startWithMAndUnderscore` because narrower selection helps leave unrelated names such as `external_value` and `LED_BUILTIN` unchanged. Use lowercase `m_`, followed by an ASCII letter and then letters or digits. For example, `m_Total` and `m_value2` are selected; `m_2total` and `m_total_amount` are excluded.
+
+Omitting `parser`, using `parser: {}`, or selecting `codeOnly` preserves the existing selection behavior. Custom regex lists and other core presets are not accepted by this plugin. Explicit static mappings still apply to their configured literal keys.
+
+CLI settings for source copying and file/folder renaming are separate. See [parser presets](https://codefend.github.io/docs/advanced-usage/parser/presets) and the [configuration reference](https://codefend.github.io/docs/references/configuration).
 
 ### Naming convention
 
-Codefend uses its `codeOnly` parser to select words with a prefix such as `l_`. For example:
+Use the recommended `m_` convention for application-owned names whose callers you control:
 
 ```js
-const l_value = 42;
-console.log(l_value);
+function m_add(m_left, m_right) {
+  return m_left + m_right;
+}
+
+console.log(m_add(2, 3));
 ```
 
-With default options this becomes:
+Both supported parsers select these `m_` names:
 
 ```js
-const Ox0 = 42;
-console.log(Ox0);
+function Ox0(Ox1, Ox2) {
+  return Ox1 + Ox2;
+}
+
+console.log(Ox0(2, 3));
 ```
 
-One mapping is shared across the modules handled by a plugin instance, so matching names in imports and exports receive consistent replacements. Vite's internal helper modules, generated asset and preload markers, and Rolldown runtime module are preserved.
+Both versions print `5`. Generated names can vary with the input and build order. See the [code naming conventions](https://codefend.github.io/docs/basic-usage/naming-conventions/code-naming-convention) for other supported prefixes.
 
-Transformations operate on the module text supplied by Vite. Review public export names, strings, and property names that must remain compatible with external code, and add those words to `transformation.ignore` when needed. This plugin does not provide a separate HTML or CSS asset transformation step.
+Codefend matches source text, so replacements can also affect strings and property names. Keep public exports, framework APIs, and external data contracts stable with `transformation.ignore`, and test the built application. Test custom pools across all modules before adopting them.
 
-See the [Codefend configuration reference](https://codefend.github.io/docs/references/configuration) for transformation options.
+## Migrate an existing project with AI
 
-## Example
+Use the [AI migration prompt](https://codefend.github.io/docs/basic-usage/naming-conventions/ai-assisted-migration) to adapt an existing project's internal variables, functions, classes, parameters, and members to Codefend's naming conventions. The guide provides a copyable prompt that asks your coding assistant to update references, preserve external interfaces and data keys, and test both the renamed source and the Codefend output.
 
-The [Node.js library example](./examples/nodejs/) builds a calculator through Vite and the local plugin checkout.
+## Build behavior
+
+The plugin runs automatically during `vite build` and applies after framework transforms. The development server and HMR retain their usual behavior; no conditional plugin configuration is needed.
+
+It transforms the module text supplied by Vite and preserves Vite's internal helper modules, generated asset and preload markers, and the Rolldown runtime module. It does not provide a separate HTML or CSS asset transformation step.
+
+Build with your usual project command, or run:
+
+```bash
+npx vite build
+```
+
+## Examples
+
+Follow the [Vite example](https://codefend.github.io/docs/examples/vite) in the Codefend documentation for complete source code, configuration, build commands, and expected output.
+
+## Documentation
+
+- [Codefend documentation](https://codefend.github.io/docs/)
+- [All language and build examples](https://codefend.github.io/docs/examples/list)
+- [Vite plugin](https://www.npmjs.com/package/vite-plugin-codefend), [esbuild plugin](https://www.npmjs.com/package/esbuild-plugin-codefend), [Rollup plugin](https://www.npmjs.com/package/rollup-plugin-codefend), and [Webpack plugin](https://www.npmjs.com/package/webpack-plugin-codefend)
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for development commands and the CI workflow.
+Pull requests and bug reports are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for development commands and contribution guidelines.
 
 ## License
 

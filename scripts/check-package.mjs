@@ -28,33 +28,40 @@ for (const entry of [manifest.main, manifest.module]) {
 const fixtureParent = realpathSync.native(tmpdir());
 const fixture = mkdtempSync(join(fixtureParent, "codefend-vite-package-"));
 try {
-  writeFileSync(join(fixture, "entry.js"), 'import { l_add } from "./math.js"; export default l_add(2, 3);');
-  writeFileSync(join(fixture, "math.js"), "export function l_add(l_left, l_right) { return l_left + l_right; }");
+  writeFileSync(
+    join(fixture, "entry.js"),
+    'import { m_add } from "./math.js"; export default function run(l_external) { return m_add(l_external, 3); }',
+  );
+  writeFileSync(join(fixture, "math.js"), "export function m_add(m_left, m_right) { return m_left + m_right; }");
   for (const api of [commonjs, esm]) {
-    const plugin = api.codefend({ debug: { stats: false } });
-    assert.equal(plugin.name, "vite-plugin-codefend");
-    assert.equal(plugin.apply, "build");
-    assert.equal(plugin.enforce, "post");
-    assert.equal(plugin.transform("const l_value = 1;"), "const Ox0 = 1;");
-    const result = await build({
-      root: fixture,
-      configFile: false,
-      logLevel: "silent",
-      plugins: [api.codefend({ debug: { stats: false } })],
-      build: {
-        write: false,
-        minify: false,
-        lib: { entry: join(fixture, "entry.js"), formats: ["cjs"], fileName: () => "bundle.cjs" },
-      },
-    });
-    const output = Array.isArray(result) ? result[0] : result;
-    assert.ok(output && "output" in output);
-    const chunk = output.output.find((item) => item.type === "chunk");
-    assert.ok(chunk);
-    assert.doesNotMatch(chunk.code, /\bl_(?:add|left|right)\b/);
-    const module = { exports: {} };
-    vm.runInNewContext(chunk.code, { module, exports: module.exports });
-    assert.equal(module.exports, 5);
+    for (const parserName of ["codeOnly", "startWithMAndUnderscore"]) {
+      const plugin = api.codefend({ parser: { name: parserName }, debug: { stats: false } });
+      assert.equal(plugin.name, "vite-plugin-codefend");
+      assert.equal(plugin.apply, "build");
+      assert.equal(plugin.enforce, "post");
+      assert.equal(plugin.transform("const m_value = 1;"), "const Ox0 = 1;");
+      const result = await build({
+        root: fixture,
+        configFile: false,
+        logLevel: "silent",
+        plugins: [api.codefend({ parser: { name: parserName }, debug: { stats: false } })],
+        build: {
+          write: false,
+          minify: false,
+          lib: { entry: join(fixture, "entry.js"), formats: ["cjs"], fileName: () => "bundle.cjs" },
+        },
+      });
+      const output = Array.isArray(result) ? result[0] : result;
+      assert.ok(output && "output" in output);
+      const chunk = output.output.find((item) => item.type === "chunk");
+      assert.ok(chunk);
+      assert.doesNotMatch(chunk.code, /\bm_(?:add|left|right)\b/);
+      if (parserName === "startWithMAndUnderscore") assert.match(chunk.code, /\bl_external\b/);
+      else assert.doesNotMatch(chunk.code, /\bl_external\b/);
+      const module = { exports: {} };
+      vm.runInNewContext(chunk.code, { module, exports: module.exports });
+      assert.equal(module.exports(2), 5);
+    }
   }
 } finally {
   if (dirname(resolve(fixture)) !== resolve(fixtureParent) || !basename(fixture).startsWith("codefend-vite-package-")) {
@@ -71,6 +78,7 @@ console.log(
     plugin: manifest.version,
     codefend: core.version,
     vite: vite.version,
+    parsers: ["codeOnly", "startWithMAndUnderscore"],
     checks: ["CommonJS", "ESM", "declarations", "source maps", "Vite compilation/execution"],
   }),
 );
